@@ -1,0 +1,111 @@
+<!-- ad-network-example/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ICP Ad Network Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 50px;
+      text-align: center;
+    }
+    #ad-container {
+      margin-top: 30px;
+    }
+    #ad-image {
+      max-width: 100%;
+      height: auto;
+    }
+    #status-message {
+      margin-top: 20px;
+      color: green;
+    }
+    #error-message {
+      margin-top: 20px;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>ICP Ad Network Example</h1>
+  <button id="fetch-ad-button">Fetch Ad</button>
+  
+  <div id="ad-container" style="display: none;">
+    <a id="ad-link" href="#" target="_blank">
+      <img id="ad-image" src="" alt="Ad Image">
+    </a>
+  </div>
+  
+  <div id="status-message"></div>
+  <div id="error-message"></div>
+  
+  <!-- Include the API Bundle -->
+  <script src="./js/ad-network-api.bundle.js"></script>
+  <script>
+    // Ensure the AdNetworkAPI is loaded
+    document.addEventListener("DOMContentLoaded", async () => {
+      const api = AdNetworkAPI; // Access the global API
+
+      // Initialize the Ad Network Actor Anonymously
+      try {
+        await api.initActorUnauthenticated();
+        displayStatus("Ad Network initialized anonymously.");
+      } catch (error) {
+        console.error("Initialization Error:", error);
+        displayError("Failed to initialize Ad Network.");
+      }
+
+      // Function to display status messages
+      function displayStatus(message) {
+        const statusDiv = document.getElementById("status-message");
+        statusDiv.textContent = message;
+      }
+
+      // Function to display error messages
+      function displayError(message) {
+        const errorDiv = document.getElementById("error-message");
+        errorDiv.textContent = message;
+      }
+
+      // Function to fetch and display an ad
+      async function fetchAndDisplayAd() {
+        try {
+          const projectId = "Ad Network Example"; // Example Project ID
+          const adType = "Horizontal Banner Portrait"; // Specify Ad Type
+
+          displayStatus("Fetching ad...");
+          const adOpt = await api.getNextAd(projectId, adType);
+          if (!adOpt || adOpt.length === 0) {
+            displayError("No available ads.");
+            return;
+          }
+
+          const ad = adOpt[0];
+          if (!ad) {
+            displayError("Failed to retrieve ad.");
+            return;
+          }
+
+          // Update the DOM with the ad details
+          const adContainer = document.getElementById("ad-container");
+          const adImage = document.getElementById("ad-image");
+          const adLink = document.getElementById("ad-link");
+
+          adImage.src = `data:image/png;base64,${ad.imageBase64}`;
+          adLink.href = ad.clickUrl;
+
+          adContainer.style.display = "block";
+          displayStatus(`Fetched Ad ID: ${ad.id}`);
+        } catch (error) {
+          console.error("Fetch Ad Error:", error);
+          displayError("Error fetching ad.");
+        }
+      }
+
+      // Attach event listener to the fetch ad button
+      document.getElementById("fetch-ad-button").addEventListener("click", fetchAndDisplayAd);
+    });
+  </script>
+</body>
+</html>
