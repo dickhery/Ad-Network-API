@@ -231,7 +231,7 @@ We welcome contributions from the community! If you'd like to contribute to the 
 2. **Clone Your Fork:**
 
    ```bash
-   git clone https://github.com/dickhery/ad-network-api.git
+   git clone https://github.com/dickhery/Ad-Network-API.git
    ```
 
 3. **Create a New Branch:**
