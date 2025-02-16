@@ -60,7 +60,7 @@ The **Ad Network Canister** is a smart contract on the Internet Computer that:
 
 1. **Manages Advertisers & Ads**: Stores ad images, links, and view counts.  
 2. **Distributes Ephemeral Tokens**: On each `getNextAd` call, it returns `(Ad, tokenId)`, where `tokenId` is short-lived.  
-3. **Rewards 5-Second Views**: Once you call `recordViewWithToken(tokenId)` after 5 seconds, the canister updates the view count and eventually issues ICP token rewards for the ad’s owner or the content creator (depending on your usage pattern).
+3. **Rewards 5-Second Views**: Once you call `recordViewWithToken(tokenId)` after 5 seconds, the canister updates the view count. You can convert any views your project has generated into ICP at any time.
 
 ### Ephemeral Tokens and the 5-Second Timer
 
