@@ -7,25 +7,22 @@
 
 ## Overview
 
-The **ICP Ad Network API** provides a simple way for web developers to **integrate advertisements** into their Internet Computer (IC) projects and **earn ICP tokens** from genuine ad views. By leveraging a lightweight, **ephemeral token** mechanism, it ensures only ads that remain visible for at least five seconds count as “valid” views. This helps reduce fraudulent views and ensures better reliability for advertisers and creators alike.
+The **ICP Ad Network API** allows developers to monetize their projects on the **Internet Computer (IC)** by embedding **ads fetched directly from the ICP Ad Network Canister**. Projects earn **ICP tokens** based on **genuine ad views**, ensuring fairness using a **5-second visibility rule**.
+
+This ensures a **view only counts if the ad is displayed on screen for at least 5 seconds**. If the ad is removed, hidden, or the user navigates away before 5 seconds, the view **must not be recorded**.
+
+---
 
 ## Table of Contents
 - [Features](#features)
 - [How It Works](#how-it-works)
-  - [The Ad Network Canister](#the-ad-network-canister)
-  - [Ephemeral Tokens and the 5-Second Timer](#ephemeral-tokens-and-the-5-second-timer)
+- [5-Second View Rule](#5-second-view-rule)
 - [Getting Started](#getting-started)
-  - [Installation](#installation)
-  - [Including the Bundle in Your HTML Project](#including-the-bundle-in-your-html-project)
 - [Step-by-Step Integration Guide](#step-by-step-integration-guide)
-  1. [Initialize the Ad Network Actor](#1-initialize-the-ad-network-actor)
-  2. [Fetch an Ad (Plus Ephemeral Token)](#2-fetch-an-ad-plus-ephemeral-token)
-  3. [Display the Ad and Wait 5 Seconds](#3-display-the-ad-and-wait-5-seconds)
-  4. [Call recordViewWithToken to Count the View](#4-call-recordviewwithtoken-to-count-the-view)
-  5. [Handle Cancelation or Layout Changes](#5-handle-cancelation-or-layout-changes)
-- [Minimal Example (ad-network-api.html)](#minimal-example-ad-network-apihtml)
+- [Minimal Example](#minimal-example)
+- [Project Registration](#project-registration)
 - [Available Ad Types](#available-ad-types)
-- [Earning ICP Tokens](#earning-icp-tokens)
+- [Earning ICP](#earning-icp)
 - [Technical Notes](#technical-notes)
 - [Contributing](#contributing)
 - [License](#license)
@@ -35,173 +32,239 @@ The **ICP Ad Network API** provides a simple way for web developers to **integra
 
 ## Features
 
-- **Lightweight & Easy Integration**  
-  Quickly embed the ad network code into an existing front-end to start monetizing.
-
-- **Ephemeral Token Security**  
-  Each fetched ad comes with a short-lived token that must be returned only after 5 seconds to confirm a “genuine view.”
-
-- **ICP Token Rewards**  
-  Earn ICP tokens automatically based on your ad impressions, which can be tracked within your canister or user account.
-
-- **Multiple Ad Types**  
-  You can specify different ad shapes, such as “Horizontal Banner Portrait” or “Full Page,” so the returned ad best fits your project layout.
-
-- **Compatibility**  
-  Works in all modern browsers, with minimal overhead.
+✅ Easy Integration into HTML, Construct 3, or other web apps  
+✅ Automatic ICP Rewards for Valid Views  
+✅ Ephemeral Token Security (one-time-use tokens)  
+✅ Fraud Prevention (5-second enforced views)  
+✅ Supports Different Ad Types & Sizes  
+✅ Works Across All Modern Browsers
 
 ---
 
 ## How It Works
 
-### The Ad Network Canister
+The **Ad Network Canister** serves ads and tracks views.
 
-The **Ad Network Canister** is a smart contract on the Internet Computer that:
+1. **Project Fetches Ad:** Your project requests an ad using its **Project ID**.
+2. **Canister Issues Ephemeral Token:** Each ad comes with a **temporary token**.
+3. **5-Second Timer:** You **must hold the ad visible on screen for 5 seconds** before recording the view.
+4. **Record the View:** After 5 seconds, call `recordViewWithToken` with the token.  
+5. **Cancel if Needed:** If the user navigates away before 5 seconds, do **not** record the view. The token becomes invalid automatically.
 
-1. **Manages Advertisers & Ads**: Stores ad images, links, and view counts.  
-2. **Distributes Ephemeral Tokens**: On each `getNextAd` call, it returns `(Ad, tokenId)`, where `tokenId` is short-lived.  
-3. **Rewards 5-Second Views**: Once you call `recordViewWithToken(tokenId)` after 5 seconds, the canister updates the view count. You can convert any views your project has generated into ICP at any time.
+---
 
-### Ephemeral Tokens and the 5-Second Timer
+## ⏱️ 5-Second View Rule (Important!)
 
-When you fetch an ad, the canister also sends you a **token** that represents that specific ad impression. By default, the ad network canister expects you to **hold** this token for at least 5 seconds while the ad is visible on screen. If the user navigates away before 5 seconds, you simply **do not** send the token back to `recordViewWithToken`, so the view does not count.
+### Why?
+To prevent abuse (like auto-refreshing ads in a loop), views only count if the **ad remains visible for a continuous 5-second period**.
+
+### Implementation
+
+- When you fetch an ad, the canister sends you a **token**.
+- Start a **5-second timer** after displaying the ad.
+- If the user navigates away, hides the ad, or switches layouts before 5 seconds, **discard the token**.
+- Only if the ad stays visible for 5 seconds should you call:
+    ```js
+    await AdNetworkAPI.recordViewWithToken(tokenId);
+    ```
+- Calling before 5 seconds = rejected view.
 
 ---
 
 ## Getting Started
 
-### Installation
+### 1. Clone & Install
+```bash
+git clone https://github.com/dickhery/ad-network-api.git
+cd ad-network-api
+npm install
+```
 
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/dickhery/ad-network-api.git
-   ```
-2. **Install Dependencies**:
-   ```bash
-   cd ad-network-api
-   npm install
-   ```
-3. **Build the Bundle**:
-   ```bash
-   npm run build
-   ```
-   This process creates a `dist/ad-network-api.bundle.js` file containing all the essential calls (`initActorUnauthenticated`, `getNextAd`, `recordViewWithToken`, etc.).
+### 2. Build the Bundle
+```bash
+npm run build
+```
+This creates `dist/ad-network-api.bundle.js` — copy it into your project.
 
-### Including the Bundle in Your HTML Project
+---
 
-After building, **copy** `ad-network-api.bundle.js` into your project’s `js/` folder (or anywhere you like). Then add a `<script>` tag in your HTML:
-
+## Include in Your Project
+Add this to your HTML:
 ```html
 <script src="./js/ad-network-api.bundle.js"></script>
 ```
 
-This exposes a global `AdNetworkAPI` object that you can call directly in your scripts.
+This exposes `AdNetworkAPI`, ready to use.
 
 ---
 
 ## Step-by-Step Integration Guide
 
-Below is a quick summary of how to integrate ads into an **HTML** front-end. For a thorough code example, see the [Minimal Example](#minimal-example-ad-network-apihtml).
+### Step 1: Initialize Actor (Anonymous)
 
-### 1. Initialize the Ad Network Actor
-
-Before fetching any ads, **initialize** the canister actor in anonymous mode:
+Before any ad calls:
 ```js
 await AdNetworkAPI.initActorUnauthenticated();
 ```
-This sets up your front-end to make calls to the canister read-only.
-
-### 2. Fetch an Ad (Plus Ephemeral Token)
-
-Use the canister call:
-```js
-const [adObject, tokenId] = await AdNetworkAPI.getNextAd("MyProjectID", "Horizontal Banner Portrait");
-```
-- **`MyProjectID`**: A string that identifies your project in the ad network.  
-- **`Horizontal Banner Portrait`**: The type of ad layout you want.
-
-If no ads are available, you get `null` or an empty result.
-
-### 3. Display the Ad and Wait 5 Seconds
-
-Update your HTML DOM:
-```js
-adImage.src = `data:image/png;base64,${adObject.imageBase64}`;
-adLink.href = adObject.clickUrl;
-```
-Then **start a 5-second timer**. If the user **remains** on the page for 5 seconds, proceed to Step 4.
-
-### 4. Call `recordViewWithToken` to Count the View
-
-After 5 seconds:
-```js
-await AdNetworkAPI.recordViewWithToken(tokenId);
-```
-If successful, the canister increments the view count. If you call too soon, it returns `false` or an error, meaning the view didn’t count.
-
-### 5. Handle Cancelation or Layout Changes
-
-If the user navigates away **before** 5 seconds, **do not** call `recordViewWithToken`. The ephemeral token is effectively **canceled**, ensuring no partial or fraudulent views.
 
 ---
 
-## Minimal Example ([ad-network-api.html](./ad-network-api.html))
+### Step 2: Fetch Ad + Ephemeral Token
+Call `getNextAd` with your **Project ID** and desired **ad type**:
+```js
+const [ad, tokenId] = await AdNetworkAPI.getNextAd("YourProjectID", "Horizontal Banner Portrait");
+```
 
-Check out `ad-network-api.html` for a **complete** minimal demonstration:
+If no ads are available, you’ll get `null`.
 
-- It shows exactly how to fetch an ad, display it, and only after 5 seconds call `recordViewWithToken(tokenId)`.
-- If the user leaves early, the code cancels the timer and never finalizes the view.
+---
+
+### Step 3: Display Ad + Start 5-Second Timer
+Show the ad in your UI:
+```js
+adImage.src = `data:image/png;base64,${ad.imageBase64}`;
+adLink.href = ad.clickUrl;
+```
+
+Immediately after displaying, **start a timer**:
+```js
+const timer = setTimeout(() => {
+    recordViewWithToken(tokenId);
+}, 5000);
+```
+
+---
+
+### Step 4: Handle Layout Changes (Ad Hidden)
+
+If the user navigates away or the ad is removed from view **before the 5 seconds**, **cancel the timer** and discard the token:
+```js
+clearTimeout(timer);
+```
+In this case, **you must NOT call `recordViewWithToken`**. The view does not count.
+
+---
+
+### Step 5: Record View After 5 Seconds
+If the ad stayed visible for 5 seconds:
+```js
+await AdNetworkAPI.recordViewWithToken(tokenId);
+```
+
+If the call succeeds, your project earns **ICP**.
+
+---
+
+## Minimal Example
+
+Check [ad-network-api.html](./ad-network-api.html) for a **complete working demo**, including:
+
+✅ Fetching ads  
+✅ Displaying ads  
+✅ Handling 5-second timer  
+✅ Cancelling when user leaves  
+✅ Recording valid views
+
+---
+
+## Project Registration (Critical Step)
+
+### Before Fetching Ads
+You **must register your project** with the Ad Network **once**.
+
+### How to Register
+1. Login to the Ad Network dapp.
+2. Navigate to **Monetize Your Project**.
+3. Enter a **Project ID** and contact information.
+4. Click **Register Project**.
+
+### Required for Every Ad Call
+Every time you call `getNextAd`, you must pass:
+```js
+getNextAd("YourProjectID", "Horizontal Banner Portrait");
+```
+Without a registered project ID, the canister will **reject** the request.
 
 ---
 
 ## Available Ad Types
 
-Below are **some** ad type strings you can pass to `getNextAd(projectId, adType)`:
+These types are supported:
+- `"Horizontal Banner Portrait"`
+- `"Full Page"`
+- `"Vertical Banner"`
+- `"Square"`
 
-1. **"Horizontal Banner Portrait"**  
-2. **"Full Page"**  
-3. **"Vertical Banner"**  
-4. **"Square"**  
-
-*(You can define any custom string if your canister code handles it. Future expansions may differentiate more shapes and sizes.)*
+More types may be added in future versions.
 
 ---
 
-## Earning ICP Tokens
+## Earning ICP
 
-1. **Views Are Counted**: Each ephemeral token that’s returned via `recordViewWithToken(tokenId)` after 5 seconds increments your view count.  
-2. **Automatic Rewards**: The canister updates your total. Depending on your usage, it can seamlessly distribute ICP tokens to the project owner or your advertiser.  
-3. **No Manual Payout**: Typically, the ad network canister either credits your principal automatically or provides a method to “cash out” your project’s aggregated views.
+✅ Every valid view adds to your project’s balance.  
+✅ Views are converted to ICP when you **cash out** via the dapp’s dashboard.  
+✅ Current rate: `0.00071 ICP per view`.
 
-*(Implementation details vary depending on the ad network’s canister logic—some require you to call a “withdraw” or “cashOutProject” function to receive tokens.)*
+*(Subject to change based on network policies.)*
 
 ---
 
 ## Technical Notes
 
-- **Anonymous vs. Authenticated**: You can keep it simple with `initActorUnauthenticated()`. If you need user-level control or the user is also an **advertiser** posting ads, you can integrate a wallet or an Internet Identity.  
-- **Time Enforcement**: The canister checks the time difference between `getNextAd` and `recordViewWithToken` internally. A typical default is 5 seconds, but your canister code might set a different threshold.  
-- **Front-End**: The front-end must hold the ephemeral token. If the user leaves or refreshes, you lose the token (no double counting or partial counting).  
+- **Ephemeral Tokens:**  
+  Each token is unique and can only be used once after exactly 5 seconds.
+
+- **Anonymous or Authenticated:**  
+  You only need `initActorUnauthenticated()` to fetch ads. No login required.
+
+- **Secure:**  
+  Canister enforces 5-second wait using on-chain timestamps.
+
+---
+
+## Example: Full Ad Flow in Code
+```js
+await AdNetworkAPI.initActorUnauthenticated();
+
+const [ad, tokenId] = await AdNetworkAPI.getNextAd("YourProjectID", "Horizontal Banner Portrait");
+
+if (ad) {
+    adImage.src = `data:image/png;base64,${ad.imageBase64}`;
+    adLink.href = ad.clickUrl;
+
+    let viewRecorded = false;
+
+    const timer = setTimeout(async () => {
+        await AdNetworkAPI.recordViewWithToken(tokenId);
+        viewRecorded = true;
+    }, 5000);
+
+    window.addEventListener("beforeunload", () => {
+        if (!viewRecorded) clearTimeout(timer);
+    });
+}
+```
 
 ---
 
 ## Contributing
 
-We’re happy to accept community contributions—feel free to open issues or pull requests if you have improvements, bug fixes, or new ad type ideas!
+Contributions are welcome! Open issues or pull requests on [GitHub](https://github.com/dickhery/ad-network-api).
 
 ---
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE). Please see the file in this repository for full details.
+MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
 ## Contact
 
-For questions, suggestions, or support, reach out at:
+- Email: dickhery@gmail.com  
+- GitHub: [dickhery](https://github.com/dickhery)
 
-- **Email:** dickhery@gmail.com  
-- **GitHub:** [dickhery](https://github.com/dickhery)
+---
 
-Thank you for choosing the **ICP Ad Network API**! We can’t wait to see how you **monetize your IC projects** with embedded ads. Remember to check out [`ad-network-api.html`](./ad-network-api.html) or `index.html` for full working demos.
+This README is **designed to ensure projects properly handle the 5-second view rule**. Properly following this guide helps protect the **ad network from fraud** and ensures your project gets fairly rewarded for **genuine ad views**.
+
